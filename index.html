@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Eleições RS 2026 — Mapa Eleitoral</title>
+  <meta name="description" content="WebGIS Interativo da Totalização Eleitoral dos 497 Municípios do Rio Grande do Sul - Eleições 2026">
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- OpenLayers 10.3.1 CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.3.1/ol.css">
+
+  <!-- Proj4js para Suporte ao CRS SIRGAS 2000 / UTM Zone 22S (EPSG:31982) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
+
+  <!-- OpenLayers 10.3.1 Full JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/ol@v10.3.1/dist/ol.js"></script>
+
+  <!-- Estilos Customizados -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/map.css">
+  <link rel="stylesheet" href="css/table.css">
+</head>
+<body>
+
+  <!-- ====================================================================
+       Header Superior da Aplicação
+       ==================================================================== -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-badge">RS 2026</div>
+      <div class="brand-title">
+        <h1>MAPA ELEITORAL — RIO GRANDE DO SUL</h1>
+        <div class="subtitle">Apuração Oficial • 497 Municípios • Tribunal Superior Eleitoral</div>
+      </div>
+    </div>
+
+    <!-- Seletor de Cargo -->
+    <div class="cargo-selector-group">
+      <button id="btn-cargo-pres" class="cargo-btn active">
+        <span>Presidente</span>
+      </button>
+      <button id="btn-cargo-gov" class="cargo-btn">
+        <span>Governador</span>
+      </button>
+    </div>
+
+    <!-- Controles de Ação -->
+    <div class="header-actions">
+      <!-- Status Badge -->
+      <div id="app-status-badge" class="status-indicator-badge">
+        <span class="status-dot"></span>
+        <span>Apuração em Andamento</span>
+      </div>
+
+      <!-- Alternador de Simulação / Teste -->
+      <button id="btn-toggle-sim" class="btn-action" title="Alternar entre Dados de Teste e Aguardando Oficial" style="color: #38bdf8;">
+        <span>Modo Simulação / Teste</span>
+      </button>
+
+      <!-- Abrir Tabela Completa -->
+      <button id="btn-open-table" class="btn-action">
+        <span>Resultados por Município</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ====================================================================
+       Área Cartográfica Principal
+       ==================================================================== -->
+  <main class="app-main">
+    <div id="map-container"></div>
+
+    <!-- Barra de Pesquisa Rápida Municipal -->
+    <div class="search-container">
+      <div class="search-input-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-municipal" class="search-input" placeholder="Buscar município ou código IBGE...">
+      </div>
+      <div id="search-results-dropdown" class="search-results-dropdown"></div>
+    </div>
+
+    <!-- Controles Flutuantes do Topo Direito -->
+    <div class="map-tools-group">
+      <!-- Seletor de Basemap -->
+      <div class="basemap-dropdown">
+        <button id="btn-basemap-toggle" class="btn-action">
+          <span>Camada Base</span>
+        </button>
+        <div id="basemap-menu" class="basemap-menu">
+          <div class="basemap-option selected" data-base="carto-light">CartoDB Positron</div>
+          <div class="basemap-option" data-base="carto-dark">CartoDB Dark Matter</div>
+          <div class="basemap-option" data-base="osm">OpenStreetMap</div>
+          <div class="basemap-option" data-base="satellite">Satélite Esri</div>
+        </div>
+      </div>
+
+      <!-- Centralizar Mapa no RS -->
+      <button id="btn-reset-view" class="btn-action" title="Centralizar visualização do Rio Grande do Sul">
+        <span>Centralizar RS</span>
+      </button>
+    </div>
+
+    <!-- Painel Flutuante de Situação Eleitoral -->
+    <div class="stats-floating-panel">
+      <div class="stats-header">
+        <span class="stats-title">Totalização no RS</span>
+        <span id="stat-totalizacao-percent" class="totalizacao-percent">0,00%</span>
+      </div>
+
+      <div class="progress-bar-container">
+        <div id="stat-progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Municípios com dados</div>
+          <div id="stat-mun-apurados" class="stat-value">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Aguardando dados</div>
+          <div id="stat-mun-pendentes" class="stat-value">497</div>
+        </div>
+      </div>
+
+      <div style="font-size: 10px; color: var(--text-dim); margin-bottom: 8px;">
+        Última atualização: <strong id="stat-update-time" style="color: var(--text-muted);">-</strong>
+      </div>
+
+      <!-- Placar Estadual Consolidado -->
+      <div id="scoreboard-container" class="scoreboard-section"></div>
+    </div>
+
+    <!-- Legenda Dinâmica Flutuante -->
+    <div class="legend-floating-panel">
+      <div class="legend-header">
+        <span>Legenda Eleitoral</span>
+        <span style="color: var(--text-dim);">Margem %</span>
+      </div>
+      <div id="dynamic-legend-content"></div>
+    </div>
+
+    <!-- Popup do OpenLayers -->
+    <div id="map-popup" class="ol-popup">
+      <a href="#" id="popup-closer" class="ol-popup-closer">✕</a>
+      <div id="popup-content"></div>
+    </div>
+  </main>
+
+  <!-- ====================================================================
+       Gaveta / Painel da Tabela Completa dos 497 Municípios
+       ==================================================================== -->
+  <div id="table-drawer-overlay" class="table-drawer-overlay"></div>
+  <aside id="table-drawer" class="table-drawer">
+    <div class="table-header">
+      <div class="table-title-area">
+        <h2>Resultados por Município</h2>
+        <p>Todos os 497 municípios do Rio Grande do Sul</p>
+      </div>
+      <button id="table-close-btn" class="table-close-btn" title="Fechar painel">✕</button>
+    </div>
+
+    <div class="table-toolbar">
+      <input type="text" id="table-search" class="table-search-input" placeholder="Filtrar por nome ou código IBGE...">
+      <select id="table-filter-winner" class="table-filter-select">
+        <option value="all">Todos os Vencedores</option>
+        <option value="lula">Vantagem Lula (PT)</option>
+        <option value="flavio">Vantagem Flávio Bolsonaro (PL)</option>
+        <option value="sem-dados">Sem dados / Pendente</option>
+      </select>
+      <span id="table-count-label" class="table-stats-count">497 municípios</span>
+      <button id="btn-export-csv" class="btn-action" style="padding: 6px 10px; font-size: 11px;">
+        Exportar CSV
+      </button>
+    </div>
+
+    <div class="table-body-container">
+      <table class="mun-table">
+        <thead>
+          <tr>
+            <th data-col="nmMun">Município ↕</th>
+            <th data-col="cdMun">Código IBGE ↕</th>
+            <th data-col="nmRgi">Região ↕</th>
+            <th data-col="vencedor">Líder ↕</th>
+            <th data-col="percent">% Líder ↕</th>
+            <th data-col="margem">Margem % ↕</th>
+            <th data-col="votosValidos">Votos Válidos ↕</th>
+          </tr>
+        </thead>
+        <tbody id="mun-table-body"></tbody>
+      </table>
+    </div>
+  </aside>
+
+  <!-- ====================================================================
+       Rodapé da Aplicação
+       ==================================================================== -->
+  <footer class="app-footer">
+    <div class="footer-left">
+      <span>Base Cartográfica: IBGE (Malha 497 Municípios RS)</span>
+      <span>•</span>
+      <span>Fonte Eleitoral: Tribunal Superior Eleitoral (TSE)</span>
+    </div>
+    <div class="footer-right">
+      <span id="footer-coords" class="footer-coord">Lat: - | Lon: - | E: - | N: -</span>
+    </div>
+  </footer>
+
+  <!-- Script Principal da Aplicação (ES Module) -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,508 @@
+/* ==========================================================================
+   Eleições RS 2026 — Mapa Eleitoral
+   Estilos Cartográficos, Painéis Flutuantes e Controles
+   ========================================================================== */
+
+/* Controles OpenLayers Customizados */
+.ol-control {
+  background-color: transparent !important;
+  padding: 0 !important;
+}
+
+.ol-zoom {
+  top: 16px !important;
+  left: 16px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ol-zoom button {
+  width: 34px !important;
+  height: 34px !important;
+  background: rgba(30, 41, 59, 0.9) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-sm) !important;
+  backdrop-filter: blur(8px);
+  font-size: 16px !important;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.ol-zoom button:hover {
+  background: rgba(51, 65, 85, 1) !important;
+  border-color: var(--border-color-light) !important;
+  transform: scale(1.04);
+}
+
+/* ==========================================================================
+   Painel de Situação Eleitoral (Top-Left)
+   ========================================================================== */
+.stats-floating-panel {
+  position: absolute;
+  top: 16px;
+  left: 60px;
+  width: 320px;
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+  transition: all var(--transition-normal);
+}
+
+.stats-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.stats-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+}
+
+.totalizacao-percent {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #10b981);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.stat-card {
+  background: rgba(15, 23, 42, 0.6);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.stat-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Placar Estadual dos Candidatos */
+.scoreboard-section {
+  border-top: 1px solid var(--border-color);
+  padding-top: 10px;
+}
+
+.candidate-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.cand-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cand-color-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.cand-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cand-numbers {
+  text-align: right;
+}
+
+.cand-percent {
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.cand-votes {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+/* ==========================================================================
+   Barra de Pesquisa Municipal (Top-Center)
+   ========================================================================== */
+.search-container {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 340px;
+  z-index: 50;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  width: 100%;
+  height: 38px;
+  background: rgba(30, 41, 59, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0 14px 0 36px;
+  color: #ffffff;
+  font-size: 13px;
+  box-shadow: var(--shadow-md);
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.search-input:focus {
+  border-color: #3b82f6;
+  background: rgba(30, 41, 59, 0.98);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-results-dropdown {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  max-height: 260px;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  display: none;
+}
+
+.search-results-dropdown.active {
+  display: block;
+}
+
+.search-result-item {
+  padding: 9px 14px;
+  font-size: 13px;
+  color: var(--text-main);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background var(--transition-fast);
+}
+
+.search-result-item:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.search-result-item .ibge-tag {
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+}
+
+/* ==========================================================================
+   Legenda Dinâmica (Bottom-Right)
+   ========================================================================== */
+.legend-floating-panel {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 250px;
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+}
+
+.legend-header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.legend-group {
+  margin-bottom: 10px;
+}
+
+.legend-group-title {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.legend-scale {
+  display: flex;
+  height: 10px;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+
+.legend-scale-item {
+  flex: 1;
+}
+
+.legend-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.legend-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 6px;
+}
+
+.legend-color-box {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+/* ==========================================================================
+   Controles do Mapa (Top-Right): Basemap e Centralizar
+   ========================================================================== */
+.map-tools-group {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 50;
+}
+
+.basemap-dropdown {
+  position: relative;
+}
+
+.basemap-menu {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  width: 160px;
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 6px 0;
+  box-shadow: var(--shadow-lg);
+  display: none;
+}
+
+.basemap-menu.active {
+  display: block;
+}
+
+.basemap-option {
+  padding: 7px 14px;
+  font-size: 12px;
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background var(--transition-fast);
+}
+
+.basemap-option:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.basemap-option.selected {
+  font-weight: 600;
+  color: #38bdf8;
+}
+
+/* ==========================================================================
+   Popup e Tooltip no Mapa
+   ========================================================================== */
+.ol-popup {
+  position: absolute;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-lg);
+  min-width: 260px;
+  max-width: 320px;
+  bottom: 12px;
+  left: -50px;
+  transform: translate(-30%, -100%);
+  pointer-events: auto;
+  z-index: 100;
+}
+
+.ol-popup:after, .ol-popup:before {
+  top: 100%;
+  border: solid transparent;
+  content: " ";
+  height: 0;
+  width: 0;
+  position: absolute;
+  pointer-events: none;
+}
+
+.ol-popup:after {
+  border-color: rgba(15, 23, 42, 0.95) transparent transparent transparent;
+  border-width: 8px;
+  left: 48%;
+  margin-left: -8px;
+}
+
+.ol-popup-closer {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 20px;
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+}
+
+.ol-popup-closer:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.popup-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.popup-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.popup-card {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+
+.popup-card-header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.popup-cand-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.popup-cand-row.winner {
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.popup-totals-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border-color);
+  padding-top: 6px;
+}
+
+/* Tooltip Rápido (Hover) */
+.map-tooltip {
+  position: absolute;
+  background: rgba(15, 23, 42, 0.9);
+  color: #ffffff;
+  padding: 4px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+  z-index: 80;
+  transform: translate(-50%, -130%);
+}
