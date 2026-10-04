@@ -12,7 +12,7 @@ WebGIS Interativo para visualização dos resultados eleitorais dos **497 munic�
 - **Tabela Municipal Completa:** Relação dos 497 municípios com busca rápida por nome ou código IBGE, filtros por vencedor, ordenação por qualquer métrica e sincronização direta com o mapa.
 - **Popups e Consulta Individual:** Detalhamento com votos válidos, brancos, nulos, percentuais e status de apuração por município ao passar o mouse ou clicar.
 - **Barra de Coordenadas em Tempo Real:** Indicação de coordenadas geográficas (Lat/Lon) e métricas projetadas UTM (Fuso 22S - SIRGAS 2000).
-- **Seletor de Mapas de Fundo (Basemaps):** CartoDB Positron (padrão claro), CartoDB Dark Matter, OpenStreetMap e Imagem de Satélite Esri.
+- **Seletor de Mapas de Fundo (Basemaps):** OpenStreetMap (padrão oficial gratuito sem API key) e Imagem de Satélite Esri.
 
 ## Base Cartográfica
 

@@ -15,7 +15,7 @@ export class MapEngine {
     this.vectorLayer = null;
     this.vectorSource = null;
     this.basemaps = {};
-    this.currentBasemap = 'carto-light';
+    this.currentBasemap = 'osm';
     this.hoveredFeature = null;
     this.selectedFeature = null;
     this.featuresByIbge = new Map();
@@ -23,32 +23,19 @@ export class MapEngine {
   }
 
   init() {
-    // Definir Basemaps
-    this.basemaps['carto-light'] = new ol.layer.Tile({
-      source: new ol.source.XYZ({
-        url: 'https://{a-d}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        attributions: '© CartoDB, © OpenStreetMap'
+    // Definir Basemap Oficial OpenStreetMap (Sem necessidade de API Key)
+    this.basemaps['osm'] = new ol.layer.Tile({
+      source: new ol.source.OSM({
+        crossOrigin: 'anonymous'
       }),
       visible: true
-    });
-
-    this.basemaps['carto-dark'] = new ol.layer.Tile({
-      source: new ol.source.XYZ({
-        url: 'https://{a-d}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        attributions: '© CartoDB, © OpenStreetMap'
-      }),
-      visible: false
-    });
-
-    this.basemaps['osm'] = new ol.layer.Tile({
-      source: new ol.source.OSM(),
-      visible: false
     });
 
     this.basemaps['satellite'] = new ol.layer.Tile({
       source: new ol.source.XYZ({
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attributions: '© Esri, Maxar, Earthstar Geographics'
+        attributions: '© Esri, Maxar, Earthstar Geographics',
+        crossOrigin: 'anonymous'
       }),
       visible: false
     });
@@ -74,8 +61,6 @@ export class MapEngine {
     this.map = new ol.Map({
       target: this.targetElementId,
       layers: [
-        this.basemaps['carto-light'],
-        this.basemaps['carto-dark'],
         this.basemaps['osm'],
         this.basemaps['satellite'],
         this.vectorLayer
