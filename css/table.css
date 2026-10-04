@@ -1,6 +1,6 @@
 /* ==========================================================================
    Eleições RS 2026 — Mapa Eleitoral
-   Estilos da Tabela Municipal de Resultados (497 Municípios)
+   Design System UI/UX Pro Max — Tabela Municipal dos 497 Municípios
    ========================================================================== */
 
 .table-drawer-overlay {
@@ -9,12 +9,12 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
   z-index: 200;
   opacity: 0;
   visibility: hidden;
-  transition: all var(--transition-normal);
+  transition: opacity 250ms ease, visibility 250ms ease;
 }
 
 .table-drawer-overlay.active {
@@ -26,17 +26,17 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: 820px;
+  width: 860px;
   max-width: 95vw;
   height: 100vh;
-  background: var(--bg-secondary);
+  background: #0f172a;
   border-left: 1px solid var(--border-color);
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.6);
+  box-shadow: -15px 0 35px rgba(0, 0, 0, 0.65);
   z-index: 210;
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .table-drawer.active {
@@ -49,17 +49,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(11, 17, 32, 0.7);
 }
 
 .table-title-area h2 {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   color: #ffffff;
+  letter-spacing: -0.2px;
 }
 
 .table-title-area p {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   margin-top: 2px;
 }
@@ -68,9 +69,8 @@
   background: transparent;
   border: none;
   color: var(--text-muted);
-  font-size: 20px;
   cursor: pointer;
-  padding: 6px;
+  padding: 8px;
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
@@ -83,55 +83,66 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Filtros da Tabela */
+/* Toolbar de Filtros */
 .table-toolbar {
   padding: 12px 24px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   gap: 12px;
   align-items: center;
-  background: rgba(15, 23, 42, 0.3);
+  background: rgba(11, 17, 32, 0.4);
+  flex-wrap: wrap;
 }
 
 .table-search-input {
   flex: 1;
-  height: 36px;
-  background: rgba(15, 23, 42, 0.7);
+  min-width: 200px;
+  height: 38px;
+  background: rgba(8, 12, 20, 0.8);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  padding: 0 12px;
+  padding: 0 14px;
   color: #ffffff;
   font-size: 13px;
   outline: none;
+  transition: border-color var(--transition-fast);
 }
 
 .table-search-input:focus {
-  border-color: #3b82f6;
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
 }
 
 .table-filter-select {
-  height: 36px;
-  background: rgba(15, 23, 42, 0.7);
+  height: 38px;
+  background: rgba(8, 12, 20, 0.8);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  padding: 0 10px;
+  padding: 0 12px;
   color: var(--text-main);
   font-size: 12px;
   outline: none;
   cursor: pointer;
 }
 
+.table-filter-select:focus {
+  border-color: #38bdf8;
+}
+
 .table-stats-count {
   font-size: 12px;
+  font-family: 'Fira Code', monospace;
   color: var(--text-muted);
   white-space: nowrap;
 }
 
-/* Tabela em si */
+/* Container com scroll horizontal seguro (UX Guidelines) */
 .table-body-container {
   flex: 1;
   overflow-y: auto;
+  overflow-x: auto;
   padding: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 table.mun-table {
@@ -139,26 +150,28 @@ table.mun-table {
   border-collapse: collapse;
   text-align: left;
   font-size: 12px;
+  min-width: 680px; /* Garante alinhamento em telas menores via scroll horizontal */
 }
 
 table.mun-table th {
-  background: #111827;
+  background: #0b1120;
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  font-size: 11px;
-  letter-spacing: 0.5px;
-  padding: 10px 14px;
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
   z-index: 10;
   cursor: pointer;
   user-select: none;
+  transition: color var(--transition-fast);
 }
 
 table.mun-table th:hover {
-  color: #ffffff;
+  color: #38bdf8;
 }
 
 table.mun-table td {
@@ -168,14 +181,18 @@ table.mun-table td {
   white-space: nowrap;
 }
 
-table.mun-table tr:hover td {
-  background: rgba(59, 130, 246, 0.12);
+table.mun-table tr {
   cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+table.mun-table tr:hover td {
+  background-color: rgba(37, 99, 235, 0.15);
 }
 
 .winner-pill {
   display: inline-block;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 12px;
   font-weight: 600;
   font-size: 11px;
@@ -211,6 +228,6 @@ table.mun-table tr:hover td {
 }
 
 .margin-tag {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Fira Code', 'JetBrains Mono', monospace;
   font-weight: 600;
 }

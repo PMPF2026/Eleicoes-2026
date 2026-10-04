@@ -6,10 +6,10 @@
   <title>Eleições RS 2026 — Mapa Eleitoral</title>
   <meta name="description" content="WebGIS Interativo da Totalização Eleitoral dos 497 Municípios do Rio Grande do Sul - Eleições 2026">
 
-  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <!-- Google Fonts: Inter, Fira Sans & Fira Code (UI/UX Pro Max Typography) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- OpenLayers 10.3.1 CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.3.1/ol.css">
@@ -20,7 +20,7 @@
   <!-- OpenLayers 10.3.1 Full JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/ol@v10.3.1/dist/ol.js"></script>
 
-  <!-- Estilos Customizados -->
+  <!-- Estilos Customizados (UI/UX Pro Max) -->
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/map.css">
   <link rel="stylesheet" href="css/table.css">
@@ -28,7 +28,7 @@
 <body>
 
   <!-- ====================================================================
-       Header Superior da Aplicação
+       Header Superior da Aplicação (UI/UX Pro Max Clean Bar)
        ==================================================================== -->
   <header class="app-header">
     <div class="brand-section">
@@ -40,11 +40,11 @@
     </div>
 
     <!-- Seletor de Cargo -->
-    <div class="cargo-selector-group">
-      <button id="btn-cargo-pres" class="cargo-btn active">
+    <div class="cargo-selector-group" role="tablist" aria-label="Seletor de Cargo Eletivo">
+      <button id="btn-cargo-pres" class="cargo-btn active" role="tab" aria-selected="true">
         <span>Presidente</span>
       </button>
-      <button id="btn-cargo-gov" class="cargo-btn">
+      <button id="btn-cargo-gov" class="cargo-btn" role="tab" aria-selected="false">
         <span>Governador</span>
       </button>
     </div>
@@ -52,18 +52,24 @@
     <!-- Controles de Ação -->
     <div class="header-actions">
       <!-- Status Badge -->
-      <div id="app-status-badge" class="status-indicator-badge">
+      <div id="app-status-badge" class="status-indicator-badge" aria-live="polite">
         <span class="status-dot"></span>
         <span>Apuração em Andamento</span>
       </div>
 
       <!-- Alternador de Simulação / Teste -->
       <button id="btn-toggle-sim" class="btn-action" title="Alternar entre Dados de Teste e Aguardando Oficial" style="color: #38bdf8;">
+        <span class="ui-icon" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        </span>
         <span>Modo Simulação / Teste</span>
       </button>
 
       <!-- Abrir Tabela Completa -->
-      <button id="btn-open-table" class="btn-action">
+      <button id="btn-open-table" class="btn-action" aria-label="Abrir tabela de resultados por município">
+        <span class="ui-icon" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+        </span>
         <span>Resultados por Município</span>
       </button>
     </div>
@@ -73,46 +79,54 @@
        Área Cartográfica Principal
        ==================================================================== -->
   <main class="app-main">
-    <div id="map-container"></div>
+    <div id="map-container" aria-label="Mapa Interativo dos Municípios do Rio Grande do Sul"></div>
 
     <!-- Barra de Pesquisa Rápida Municipal -->
     <div class="search-container">
       <div class="search-input-wrapper">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="search-municipal" class="search-input" placeholder="Buscar município ou código IBGE...">
+        <span class="search-icon-slot" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </span>
+        <input type="text" id="search-municipal" class="search-input" placeholder="Buscar município ou código IBGE..." aria-label="Buscar município por nome ou código IBGE">
       </div>
-      <div id="search-results-dropdown" class="search-results-dropdown"></div>
+      <div id="search-results-dropdown" class="search-results-dropdown" role="listbox"></div>
     </div>
 
     <!-- Controles Flutuantes do Topo Direito -->
     <div class="map-tools-group">
       <!-- Seletor de Basemap -->
       <div class="basemap-dropdown">
-        <button id="btn-basemap-toggle" class="btn-action">
+        <button id="btn-basemap-toggle" class="btn-action" aria-haspopup="true" aria-expanded="false" title="Alternar camada de fundo do mapa">
+          <span class="ui-icon" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+          </span>
           <span>Camada Base</span>
         </button>
-        <div id="basemap-menu" class="basemap-menu">
-          <div class="basemap-option selected" data-base="carto-light">CartoDB Positron</div>
-          <div class="basemap-option" data-base="carto-dark">CartoDB Dark Matter</div>
-          <div class="basemap-option" data-base="osm">OpenStreetMap</div>
-          <div class="basemap-option" data-base="satellite">Satélite Esri</div>
+        <div id="basemap-menu" class="basemap-menu" role="menu">
+          <div class="basemap-option selected" data-base="carto-light" role="menuitem">CartoDB Positron</div>
+          <div class="basemap-option" data-base="carto-dark" role="menuitem">CartoDB Dark Matter</div>
+          <div class="basemap-option" data-base="osm" role="menuitem">OpenStreetMap</div>
+          <div class="basemap-option" data-base="satellite" role="menuitem">Satélite Esri</div>
         </div>
       </div>
 
       <!-- Centralizar Mapa no RS -->
-      <button id="btn-reset-view" class="btn-action" title="Centralizar visualização do Rio Grande do Sul">
+      <button id="btn-reset-view" class="btn-action" title="Centralizar visualização do Rio Grande do Sul" aria-label="Centralizar mapa no Rio Grande do Sul">
+        <span class="ui-icon" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+        </span>
         <span>Centralizar RS</span>
       </button>
     </div>
 
-    <!-- Painel Flutuante de Situação Eleitoral -->
-    <div class="stats-floating-panel">
+    <!-- Painel Flutuante de Situação Eleitoral (KPI Cards) -->
+    <section class="stats-floating-panel" aria-label="Painel de Totalização Eleitoral">
       <div class="stats-header">
         <span class="stats-title">Totalização no RS</span>
         <span id="stat-totalizacao-percent" class="totalizacao-percent">0,00%</span>
       </div>
 
-      <div class="progress-bar-container">
+      <div class="progress-bar-container" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div id="stat-progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
       </div>
 
@@ -133,20 +147,22 @@
 
       <!-- Placar Estadual Consolidado -->
       <div id="scoreboard-container" class="scoreboard-section"></div>
-    </div>
+    </section>
 
     <!-- Legenda Dinâmica Flutuante -->
-    <div class="legend-floating-panel">
+    <aside class="legend-floating-panel" aria-label="Legenda de Intensidade Eleitoral">
       <div class="legend-header">
         <span>Legenda Eleitoral</span>
         <span style="color: var(--text-dim);">Margem %</span>
       </div>
       <div id="dynamic-legend-content"></div>
-    </div>
+    </aside>
 
     <!-- Popup do OpenLayers -->
-    <div id="map-popup" class="ol-popup">
-      <a href="#" id="popup-closer" class="ol-popup-closer">✕</a>
+    <div id="map-popup" class="ol-popup" role="dialog" aria-modal="false">
+      <a href="#" id="popup-closer" class="ol-popup-closer" aria-label="Fechar detalhes do município">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </a>
       <div id="popup-content"></div>
     </div>
   </main>
@@ -154,27 +170,32 @@
   <!-- ====================================================================
        Gaveta / Painel da Tabela Completa dos 497 Municípios
        ==================================================================== -->
-  <div id="table-drawer-overlay" class="table-drawer-overlay"></div>
-  <aside id="table-drawer" class="table-drawer">
+  <div id="table-drawer-overlay" class="table-drawer-overlay" tabindex="-1"></div>
+  <aside id="table-drawer" class="table-drawer" role="dialog" aria-label="Tabela dos 497 Municípios">
     <div class="table-header">
       <div class="table-title-area">
         <h2>Resultados por Município</h2>
         <p>Todos os 497 municípios do Rio Grande do Sul</p>
       </div>
-      <button id="table-close-btn" class="table-close-btn" title="Fechar painel">✕</button>
+      <button id="table-close-btn" class="table-close-btn" aria-label="Fechar painel da tabela">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
 
     <div class="table-toolbar">
-      <input type="text" id="table-search" class="table-search-input" placeholder="Filtrar por nome ou código IBGE...">
-      <select id="table-filter-winner" class="table-filter-select">
+      <input type="text" id="table-search" class="table-search-input" placeholder="Filtrar por nome ou código IBGE..." aria-label="Filtrar tabela">
+      <select id="table-filter-winner" class="table-filter-select" aria-label="Filtrar por vencedor">
         <option value="all">Todos os Vencedores</option>
         <option value="lula">Vantagem Lula (PT)</option>
         <option value="flavio">Vantagem Flávio Bolsonaro (PL)</option>
         <option value="sem-dados">Sem dados / Pendente</option>
       </select>
       <span id="table-count-label" class="table-stats-count">497 municípios</span>
-      <button id="btn-export-csv" class="btn-action" style="padding: 6px 10px; font-size: 11px;">
-        Exportar CSV
+      <button id="btn-export-csv" class="btn-action" style="padding: 6px 12px; font-size: 11px;">
+        <span class="ui-icon" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </span>
+        <span>Exportar CSV</span>
       </button>
     </div>
 
