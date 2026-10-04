@@ -166,52 +166,93 @@
   </main>
 
   <!-- ====================================================================
-       Gaveta / Painel da Tabela Completa dos 497 Municípios
+       Gaveta / Painel da Tabela Completa dos 497 Municípios (GATE 6.4)
        ==================================================================== -->
   <div id="table-drawer-overlay" class="table-drawer-overlay" tabindex="-1"></div>
   <aside id="table-drawer" class="table-drawer" role="dialog" aria-label="Tabela dos 497 Municípios">
     <div class="table-header">
       <div class="table-title-area">
         <h2>Resultados por Município</h2>
-        <p>Todos os 497 municípios do Rio Grande do Sul</p>
+        <p>Todos os 497 municípios do Rio Grande do Sul • Dados Oficiais TSE</p>
       </div>
       <button id="table-close-btn" class="table-close-btn" aria-label="Fechar painel da tabela">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
 
+    <!-- Mini Faixa de Resumo Oficial (Seção 13) -->
+    <div id="table-summary-ribbon" class="table-summary-ribbon"></div>
+
+    <!-- Barra de Ferramentas: Busca e Filtros Analíticos (Seções 7 e 8) -->
     <div class="table-toolbar">
-      <input type="text" id="table-search" class="table-search-input" placeholder="Filtrar por nome ou código IBGE..." aria-label="Filtrar tabela">
-      <select id="table-filter-winner" class="table-filter-select" aria-label="Filtrar por vencedor">
-        <option value="all">Todos os Vencedores</option>
-        <option value="lula">Vantagem Lula (PT)</option>
-        <option value="flavio">Vantagem Flávio Bolsonaro (PL)</option>
-        <option value="sem-dados">Sem dados / Pendente</option>
+      <div class="table-search-wrapper">
+        <svg class="table-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="table-search" class="table-search-input" placeholder="Buscar município..." aria-label="Buscar município na tabela">
+      </div>
+
+      <select id="table-filter-status" class="table-filter-select" aria-label="Filtrar por status">
+        <option value="all">Todos os Status</option>
+        <option value="finalizado">Totalizado</option>
+        <option value="em_apuracao">Em apuração</option>
+        <option value="awaiting">Aguardando</option>
+        <option value="fallback">Último dado válido</option>
+        <option value="error">Dados indisponíveis</option>
       </select>
-      <span id="table-count-label" class="table-stats-count">497 municípios</span>
-      <button id="btn-export-csv" class="btn-action" style="padding: 6px 12px; font-size: 11px;">
-        <span class="ui-icon" aria-hidden="true">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </span>
-        <span>Exportar CSV</span>
+
+      <select id="table-filter-winner" class="table-filter-select" aria-label="Filtrar por candidato líder">
+        <option value="all">Todos os Vencedores</option>
+      </select>
+
+      <select id="table-filter-margin" class="table-filter-select" aria-label="Filtrar por faixa de margem">
+        <option value="all">Todas as Margens</option>
+        <option value="<2">&lt; 2 pp (Disputa acirrada)</option>
+        <option value="2-5">2 a &lt; 5 pp (Margem baixa)</option>
+        <option value="5-10">5 a &lt; 10 pp (Margem média)</option>
+        <option value="10-20">10 a &lt; 20 pp (Margem alta)</option>
+        <option value=">=20">≥ 20 pp (Ampla vantagem)</option>
+      </select>
+
+      <button id="btn-clear-filters" class="btn-clear-filters" title="Limpar todos os filtros da tabela">
+        Limpar
       </button>
     </div>
 
+    <!-- Container da Tabela com Scroll Responsivo (Seção 5) -->
     <div class="table-body-container">
       <table class="mun-table">
         <thead>
           <tr>
-            <th data-col="nmMun">Município ↕</th>
-            <th data-col="cdMun">Código IBGE ↕</th>
-            <th data-col="nmRgi">Região ↕</th>
-            <th data-col="vencedor">Líder ↕</th>
-            <th data-col="percent">% Líder ↕</th>
-            <th data-col="margem">Margem % ↕</th>
-            <th data-col="votosValidos">Votos Válidos ↕</th>
+            <th data-col="nmMun" title="Ordenar por município">Município <span class="sort-icon">↕</span></th>
+            <th data-col="status" title="Ordenar por status da apuração">Status <span class="sort-icon">↕</span></th>
+            <th data-col="apuracao" title="Ordenar por apuração das seções">Apuração <span class="sort-icon">↕</span></th>
+            <th data-col="vencedor" title="Ordenar por 1º colocado">1º Colocado <span class="sort-icon">↕</span></th>
+            <th data-col="percent1" title="Ordenar por % do 1º colocado">% 1º <span class="sort-icon">↕</span></th>
+            <th data-col="segundo" title="Ordenar por 2º colocado">2º Colocado <span class="sort-icon">↕</span></th>
+            <th data-col="percent2" title="Ordenar por % do 2º colocado">% 2º <span class="sort-icon">↕</span></th>
+            <th data-col="margem" title="Ordenar por margem percentual">Margem <span class="sort-icon">↕</span></th>
           </tr>
         </thead>
         <tbody id="mun-table-body"></tbody>
       </table>
+    </div>
+
+    <!-- Barra Inferior de Paginação e Contadores (Seção 12) -->
+    <div class="table-pagination-bar">
+      <div class="pagination-info">
+        <span id="table-count-label" class="table-stats-count">497 municípios</span>
+      </div>
+      <div class="pagination-controls">
+        <span class="page-size-label">Linhas:</span>
+        <select id="table-page-size" class="page-size-select" aria-label="Quantidade de linhas por página">
+          <option value="25">25</option>
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+          <option value="497">Todos (497)</option>
+        </select>
+        <button id="btn-prev-page" class="btn-page" title="Página anterior" aria-label="Página anterior">‹ Anterior</button>
+        <span id="pagination-pages-label" class="pages-label">1 de 10</span>
+        <button id="btn-next-page" class="btn-page" title="Próxima página" aria-label="Próxima página">Próxima ›</button>
+      </div>
     </div>
   </aside>
 

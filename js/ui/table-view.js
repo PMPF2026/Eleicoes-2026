@@ -1,17 +1,69 @@
 /**
  * Eleições RS 2026 — Mapa Eleitoral
- * Tabela Completa dos 497 Municípios (Busca, Filtros, Ordenação e Zoom no Mapa)
+ * Tabela Municipal Interativa dos 497 Municípios com Filtros Analíticos
+ * GATE 6.4 — Tabela Municipal + Filtros Analíticos
  */
 
 import { APP_CONFIG } from '../config.js';
 import { electionState } from '../data/tse-normalizer.js';
 
-let allTableData = [];
-let filteredTableData = [];
-let currentSortColumn = 'nmMun';
-let currentSortAsc = true;
+let allMunicipalities = [];
+let filteredData = [];
+let currentPage = 1;
+let pageSize = 50;
+let currentSort = { column: 'nmMun', asc: true };
+
+let currentFilters = {
+  search: '',
+  status: 'all',
+  winner: 'all',
+  margin: 'all'
+};
+
 let mapEngineRef = null;
 
+/**
+ * Utilitários de escape e formatação
+ */
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function formatPct(val) {
+  if (val === null || val === undefined || isNaN(val)) return '—';
+  return Number(val).toFixed(2).replace('.', ',') + '%';
+}
+
+function formatPp(val) {
+  if (val === null || val === undefined || isNaN(val)) return '—';
+  return Number(val).toFixed(2).replace('.', ',') + ' pp';
+}
+
+/**
+ * Cores para identificação visual discreta do candidato
+ */
+function getCandidateColor(cand, cargo) {
+  if (!cand) return '#94a3b8';
+  const num = String(cand.numero || '');
+  if (cargo === APP_CONFIG.CARGOS.PRESIDENTE) {
+    if (num === '13') return '#ef4444'; // Lula (PT)
+    if (num === '22') return '#3b82f6'; // Flávio Bolsonaro (PL)
+    return '#94a3b8';
+  } else {
+    if (num === '22') return '#eab308'; // Zucco (PL)
+    return '#22c55e'; // Oposição / Segundo colocado dinâmico estadual
+  }
+}
+
+/**
+ * Inicializa os controles e eventos da tabela municipal
+ */
 export function initTableView(mapEngine) {
   mapEngineRef = mapEngine;
 
@@ -19,9 +71,16 @@ export function initTableView(mapEngine) {
   const overlay = document.getElementById('table-drawer-overlay');
   const openBtn = document.getElementById('btn-open-table');
   const closeBtn = document.getElementById('table-close-btn');
+
   const searchInput = document.getElementById('table-search');
-  const filterSelect = document.getElementById('table-filter-winner');
-  const exportBtn = document.getElementById('btn-export-csv');
+  const statusSelect = document.getElementById('table-filter-status');
+  const winnerSelect = document.getElementById('table-filter-winner');
+  const marginSelect = document.getElementById('table-filter-margin');
+  const clearBtn = document.getElementById('btn-clear-filters');
+
+  const pageSizeSelect = document.getElementById('table-page-size');
+  const prevBtn = document.getElementById('btn-prev-page');
+  const nextBtn = document.getElementById('btn-next-page');
 
   function openDrawer() {
     if (drawer && overlay) {
@@ -42,191 +101,511 @@ export function initTableView(mapEngine) {
   if (closeBtn) closeBtn.onclick = closeDrawer;
   if (overlay) overlay.onclick = closeDrawer;
 
+  // Busca por município (Seção 7)
   if (searchInput) {
     searchInput.oninput = (e) => {
-      filterData(e.target.value, filterSelect ? filterSelect.value : 'all');
+      currentFilters.search = e.target.value;
+      currentPage = 1;
+      applyFiltersAndSort();
+      renderTableBodyAndPagination();
     };
   }
 
-  if (filterSelect) {
-    filterSelect.onchange = (e) => {
-      filterData(searchInput ? searchInput.value : '', e.target.value);
+  // Filtro de Status (Seção 8.1)
+  if (statusSelect) {
+    statusSelect.onchange = (e) => {
+      currentFilters.status = e.target.value;
+      currentPage = 1;
+      applyFiltersAndSort();
+      renderTableBodyAndPagination();
     };
   }
 
-  if (exportBtn) {
-    exportBtn.onclick = exportToCSV;
+  // Filtro de Candidato Vencedor (Seção 8.2)
+  if (winnerSelect) {
+    winnerSelect.onchange = (e) => {
+      currentFilters.winner = e.target.value;
+      currentPage = 1;
+      applyFiltersAndSort();
+      renderTableBodyAndPagination();
+    };
   }
 
-  // Configurar ordenação nas colunas
+  // Filtro de Faixa de Margem (Seção 8.3)
+  if (marginSelect) {
+    marginSelect.onchange = (e) => {
+      currentFilters.margin = e.target.value;
+      currentPage = 1;
+      applyFiltersAndSort();
+      renderTableBodyAndPagination();
+    };
+  }
+
+  // Limpar Filtros
+  if (clearBtn) {
+    clearBtn.onclick = () => {
+      currentFilters = { search: '', status: 'all', winner: 'all', margin: 'all' };
+      if (searchInput) searchInput.value = '';
+      if (statusSelect) statusSelect.value = 'all';
+      if (winnerSelect) winnerSelect.value = 'all';
+      if (marginSelect) marginSelect.value = 'all';
+      currentPage = 1;
+      applyFiltersAndSort();
+      renderTableBodyAndPagination();
+    };
+  }
+
+  // Paginação: Seleção de linhas por página (Seção 12)
+  if (pageSizeSelect) {
+    pageSizeSelect.onchange = (e) => {
+      pageSize = parseInt(e.target.value, 10);
+      currentPage = 1;
+      renderTableBodyAndPagination();
+    };
+  }
+
+  if (prevBtn) {
+    prevBtn.onclick = () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderTableBodyAndPagination();
+      }
+    };
+  }
+
+  if (nextBtn) {
+    nextBtn.onclick = () => {
+      const maxPages = Math.ceil(filteredData.length / pageSize) || 1;
+      if (currentPage < maxPages) {
+        currentPage++;
+        renderTableBodyAndPagination();
+      }
+    };
+  }
+
+  // Ordenação nas colunas (Seção 9)
   document.querySelectorAll('table.mun-table th[data-col]').forEach(th => {
     th.onclick = () => {
       const col = th.getAttribute('data-col');
-      if (currentSortColumn === col) {
-        currentSortAsc = !currentSortAsc;
+      if (currentSort.column === col) {
+        currentSort.asc = !currentSort.asc;
       } else {
-        currentSortColumn = col;
-        currentSortAsc = true;
+        currentSort.column = col;
+        // Colunas numéricas/percentuais iniciam em ordem decrescente (maior primeiro)
+        if (['apuracao', 'percent1', 'percent2', 'margem'].includes(col)) {
+          currentSort.asc = false;
+        } else {
+          currentSort.asc = true;
+        }
       }
-      sortData();
-      renderTable();
+      updateSortHeaderIcons();
+      applyFiltersAndSort();
+      renderTableBodyAndPagination();
     };
+  });
+
+  // Re-renderizar tabela ao atualizar estado eleitoral ou alternar cargo (Seção 11)
+  electionState.subscribe(() => {
+    renderTable();
   });
 }
 
 /**
- * Recarrega os dados da tabela com base no estado atual da apuração
+ * Atualiza os ícones de ordenação nas colunas
+ */
+function updateSortHeaderIcons() {
+  document.querySelectorAll('table.mun-table th[data-col]').forEach(th => {
+    const col = th.getAttribute('data-col');
+    const iconSpan = th.querySelector('.sort-icon');
+    if (col === currentSort.column) {
+      th.classList.add('active-sort');
+      if (iconSpan) iconSpan.textContent = currentSort.asc ? '↑' : '↓';
+    } else {
+      th.classList.remove('active-sort');
+      if (iconSpan) iconSpan.textContent = '↕';
+    }
+  });
+}
+
+/**
+ * Popula a base dos 497 municípios cartográficos no carregamento da malha
  */
 export function populateTableData(features) {
-  allTableData = features.map(feat => {
-    const cdMun = String(feat.get('CD_MUN'));
-    const nmMun = feat.get('NM_MUN') || '';
-    const nmRgi = feat.get('NM_RGI') || '';
-    const res = electionState.getMunicipioResult(cdMun);
+  if (!features || !Array.isArray(features)) return;
 
+  allMunicipalities = features.map(feat => {
     return {
-      cdMun,
-      nmMun,
-      nmRgi,
-      result: res
+      cdMun: String(feat.get('CD_MUN') || '').trim(),
+      nmMun: feat.get('NM_MUN') || 'Município',
+      nmRgi: feat.get('NM_RGI') || '',
+      feature: feat
     };
   });
 
-  filteredTableData = [...allTableData];
-  sortData();
-}
-
-function filterData(query, filterWinner) {
-  const q = query.toLowerCase().trim();
-  const currentCargo = electionState.currentCargo;
-
-  filteredTableData = allTableData.filter(item => {
-    // Filtro de texto (Nome ou Código IBGE)
-    const matchText = !q || item.nmMun.toLowerCase().includes(q) || item.cdMun.includes(q);
-    if (!matchText) return false;
-
-    // Filtro de Vencedor
-    if (filterWinner === 'all') return true;
-
-    if (!item.result || !item.result.apurado) {
-      return filterWinner === 'sem-dados';
-    }
-
-    const cData = currentCargo === APP_CONFIG.CARGOS.PRESIDENTE ? item.result.presidente : item.result.governador;
-    return cData && cData.vencedor === filterWinner;
-  });
-
-  sortData();
   renderTable();
 }
 
-function sortData() {
-  const cargo = electionState.currentCargo;
+/**
+ * Reconstrói dinamicamente as opções do filtro de candidatos líderes para o cargo ativo (Seção 8.2)
+ */
+function rebuildWinnerFilterOptions() {
+  const winnerSelect = document.getElementById('table-filter-winner');
+  if (!winnerSelect) return;
 
-  filteredTableData.sort((a, b) => {
-    let valA = a[currentSortColumn];
-    let valB = b[currentSortColumn];
+  const currentCargo = electionState.currentCargo;
+  const winnerCounts = new Map();
 
-    if (currentSortColumn === 'vencedor') {
-      const wA = a.result && a.result.apurado ? (cargo === 'PRESIDENTE' ? a.result.presidente.vencedor : a.result.governador.vencedor) : '';
-      const wB = b.result && b.result.apurado ? (cargo === 'PRESIDENTE' ? b.result.presidente.vencedor : b.result.governador.vencedor) : '';
-      valA = wA;
-      valB = wB;
-    } else if (currentSortColumn === 'percent') {
-      const pA = a.result && a.result.apurado ? (cargo === 'PRESIDENTE' ? Math.max(a.result.presidente.lula.percentual, a.result.presidente.flavio.percentual) : Math.max(a.result.governador.zucco.percentual, a.result.governador.gov2.percentual)) : 0;
-      const pB = b.result && b.result.apurado ? (cargo === 'PRESIDENTE' ? Math.max(b.result.presidente.lula.percentual, b.result.presidente.flavio.percentual) : Math.max(b.result.governador.zucco.percentual, b.result.governador.gov2.percentual)) : 0;
-      valA = pA;
-      valB = pB;
-    } else if (currentSortColumn === 'margem') {
-      const mA = a.result && a.result.apurado ? (cargo === 'PRESIDENTE' ? a.result.presidente.margemPercent : a.result.governador.margemPercent) : -1;
-      const mB = b.result && b.result.apurado ? (cargo === 'PRESIDENTE' ? b.result.presidente.margemPercent : b.result.governador.margemPercent) : -1;
-      valA = mA;
-      valB = mB;
-    } else if (currentSortColumn === 'votosValidos') {
-      valA = a.result && a.result.apurado ? a.result.votosValidos : 0;
-      valB = b.result && b.result.apurado ? b.result.votosValidos : 0;
+  allMunicipalities.forEach(item => {
+    const mun = electionState.getElectionByMunicipality(item.cdMun);
+    const cargoData = mun ? (currentCargo === APP_CONFIG.CARGOS.PRESIDENTE ? mun.presidente : mun.governador) : null;
+    if (cargoData && cargoData.vencedor && cargoData.vencedor.nome) {
+      const name = String(cargoData.vencedor.nome).trim().toUpperCase();
+      winnerCounts.set(name, (winnerCounts.get(name) || 0) + 1);
+    }
+  });
+
+  // Ordenar candidatos por número decrescente de municípios liderados
+  const sortedWinners = [...winnerCounts.entries()].sort((a, b) => b[1] - a[1]);
+
+  let html = `<option value="all">Todos os Vencedores</option>`;
+  sortedWinners.forEach(([name, count]) => {
+    const isSelected = currentFilters.winner.toUpperCase() === name.toUpperCase();
+    html += `<option value="${escapeHtml(name)}" ${isSelected ? 'selected' : ''}>${escapeHtml(name)} (${count})</option>`;
+  });
+
+  winnerSelect.innerHTML = html;
+
+  // Se o candidato filtrado anteriormente não existir no novo cargo, resetar para 'all'
+  if (currentFilters.winner !== 'all' && !winnerCounts.has(currentFilters.winner.toUpperCase())) {
+    currentFilters.winner = 'all';
+    winnerSelect.value = 'all';
+  }
+}
+
+/**
+ * Renderiza a faixa de resumo no topo da gaveta (Seção 13)
+ */
+function renderSummaryRibbon() {
+  const ribbon = document.getElementById('table-summary-ribbon');
+  if (!ribbon) return;
+
+  const currentCargo = electionState.currentCargo;
+  const totalMuns = allMunicipalities.length || 497;
+  let totalizados = 0;
+  let emApuracao = 0;
+  let aguardando = 0;
+
+  allMunicipalities.forEach(item => {
+    const mun = electionState.getElectionByMunicipality(item.cdMun);
+    const cargoData = mun ? (currentCargo === APP_CONFIG.CARGOS.PRESIDENTE ? mun.presidente : mun.governador) : null;
+    const rawStatus = (cargoData?.status || 'awaiting').toLowerCase();
+
+    if (rawStatus === 'finalizado') {
+      totalizados++;
+    } else if (rawStatus === 'em_apuracao') {
+      emApuracao++;
+    } else {
+      aguardando++;
+    }
+  });
+
+  ribbon.innerHTML = `
+    <div class="summary-pill total">
+      <span class="summary-count">${totalMuns}</span>
+      <span class="summary-label">Municípios</span>
+    </div>
+    <div class="summary-pill totalizado">
+      <span class="summary-dot"></span>
+      <span class="summary-count">${totalizados}</span>
+      <span class="summary-label">Totalizados</span>
+    </div>
+    <div class="summary-pill em_apuracao">
+      <span class="summary-dot"></span>
+      <span class="summary-count">${emApuracao}</span>
+      <span class="summary-label">Em apuração</span>
+    </div>
+    <div class="summary-pill aguardando">
+      <span class="summary-dot"></span>
+      <span class="summary-count">${aguardando}</span>
+      <span class="summary-label">Aguardando</span>
+    </div>
+  `;
+}
+
+/**
+ * Aplica os filtros e efetua a ordenação dos dados
+ */
+function applyFiltersAndSort() {
+  const currentCargo = electionState.currentCargo;
+  const q = currentFilters.search.toLowerCase().trim();
+  const fStatus = currentFilters.status;
+  const fWinner = currentFilters.winner.toUpperCase();
+  const fMargin = currentFilters.margin;
+
+  filteredData = allMunicipalities.filter(item => {
+    // 1. Busca por nome (NM_MUN) ou código IBGE (CD_MUN)
+    if (q) {
+      const matchNm = item.nmMun.toLowerCase().includes(q);
+      const matchCd = item.cdMun.includes(q);
+      if (!matchNm && !matchCd) return false;
     }
 
-    if (valA < valB) return currentSortAsc ? -1 : 1;
-    if (valA > valB) return currentSortAsc ? 1 : -1;
+    const mun = electionState.getElectionByMunicipality(item.cdMun);
+    const cargoData = mun ? (currentCargo === APP_CONFIG.CARGOS.PRESIDENTE ? mun.presidente : mun.governador) : null;
+    const rawStatus = (cargoData?.status || 'awaiting').toLowerCase();
+
+    // 2. Filtro de Status (Seção 8.1)
+    if (fStatus !== 'all') {
+      if (fStatus === 'finalizado' && rawStatus !== 'finalizado') return false;
+      if (fStatus === 'em_apuracao' && rawStatus !== 'em_apuracao') return false;
+      if (fStatus === 'awaiting' && rawStatus !== 'awaiting' && rawStatus !== 'aguardando') return false;
+      if (fStatus === 'fallback' && rawStatus !== 'fallback') return false;
+      if (fStatus === 'error' && rawStatus !== 'error') return false;
+    }
+
+    // 3. Filtro de Candidato Vencedor (Seção 8.2)
+    if (fWinner !== 'ALL') {
+      if (rawStatus === 'awaiting' || rawStatus === 'aguardando' || !cargoData?.vencedor) {
+        return false;
+      }
+      const winnerName = String(cargoData.vencedor.nome || '').trim().toUpperCase();
+      if (winnerName !== fWinner) return false;
+    }
+
+    // 4. Filtro de Faixa de Margem (Seção 8.3)
+    if (fMargin !== 'all') {
+      const diff = cargoData?.diferenca_pp;
+      if (diff === null || diff === undefined) return false;
+      if (fMargin === '<2' && diff >= 2.0) return false;
+      if (fMargin === '2-5' && (diff < 2.0 || diff >= 5.0)) return false;
+      if (fMargin === '5-10' && (diff < 5.0 || diff >= 10.0)) return false;
+      if (fMargin === '10-20' && (diff < 10.0 || diff >= 20.0)) return false;
+      if (fMargin === '>=20' && diff < 20.0) return false;
+    }
+
+    return true;
+  });
+
+  // Ordenação (Seção 9)
+  sortFilteredData();
+
+  // Ajuste do limite de página
+  const maxPages = Math.ceil(filteredData.length / pageSize) || 1;
+  if (currentPage > maxPages) currentPage = 1;
+}
+
+/**
+ * Ordena os municípios filtrados segundo a coluna e direção selecionadas
+ */
+function sortFilteredData() {
+  const currentCargo = electionState.currentCargo;
+  const col = currentSort.column;
+  const asc = currentSort.asc;
+
+  filteredData.sort((a, b) => {
+    const munA = electionState.getElectionByMunicipality(a.cdMun);
+    const munB = electionState.getElectionByMunicipality(b.cdMun);
+    const dataA = munA ? (currentCargo === APP_CONFIG.CARGOS.PRESIDENTE ? munA.presidente : munA.governador) : null;
+    const dataB = munB ? (currentCargo === APP_CONFIG.CARGOS.PRESIDENTE ? munB.presidente : munB.governador) : null;
+
+    if (col === 'nmMun') {
+      return asc ? a.nmMun.localeCompare(b.nmMun, 'pt-BR') : b.nmMun.localeCompare(a.nmMun, 'pt-BR');
+    }
+
+    if (col === 'status') {
+      const sA = dataA?.status || 'awaiting';
+      const sB = dataB?.status || 'awaiting';
+      return asc ? sA.localeCompare(sB) : sB.localeCompare(sA);
+    }
+
+    if (col === 'apuracao') {
+      const pA = dataA?.percentual_apurado ?? -1;
+      const pB = dataB?.percentual_apurado ?? -1;
+      return asc ? pA - pB : pB - pA;
+    }
+
+    if (col === 'vencedor') {
+      const vA = dataA?.vencedor?.nome || '';
+      const vB = dataB?.vencedor?.nome || '';
+      return asc ? vA.localeCompare(vB, 'pt-BR') : vB.localeCompare(vA, 'pt-BR');
+    }
+
+    if (col === 'percent1') {
+      const pctA = dataA?.vencedor?.percentual ?? -1;
+      const pctB = dataB?.vencedor?.percentual ?? -1;
+      return asc ? pctA - pctB : pctB - pctA;
+    }
+
+    if (col === 'segundo') {
+      const sA = dataA?.segundo_colocado?.nome || '';
+      const sB = dataB?.segundo_colocado?.nome || '';
+      return asc ? sA.localeCompare(sB, 'pt-BR') : sB.localeCompare(sA, 'pt-BR');
+    }
+
+    if (col === 'percent2') {
+      const pctA = dataA?.segundo_colocado?.percentual ?? -1;
+      const pctB = dataB?.segundo_colocado?.percentual ?? -1;
+      return asc ? pctA - pctB : pctB - pctA;
+    }
+
+    if (col === 'margem') {
+      // Quando ascendente (menor margem primeiro), ausência de apuração vai para o final
+      const mA = dataA?.diferenca_pp !== null && dataA?.diferenca_pp !== undefined ? dataA.diferenca_pp : (asc ? 999999 : -1);
+      const mB = dataB?.diferenca_pp !== null && dataB?.diferenca_pp !== undefined ? dataB.diferenca_pp : (asc ? 999999 : -1);
+      return asc ? mA - mB : mB - mA;
+    }
+
     return 0;
   });
 }
 
-export function renderTable() {
+/**
+ * Renderiza o corpo da tabela e atualiza os controles de paginação
+ */
+function renderTableBodyAndPagination() {
   const tbody = document.getElementById('mun-table-body');
-  const countEl = document.getElementById('table-count-label');
+  const countLabel = document.getElementById('table-count-label');
+  const pagesLabel = document.getElementById('pagination-pages-label');
+  const prevBtn = document.getElementById('btn-prev-page');
+  const nextBtn = document.getElementById('btn-next-page');
+
   if (!tbody) return;
 
-  if (countEl) {
-    countEl.textContent = `${filteredTableData.length} de ${allTableData.length} municípios`;
+  const totalFiltered = filteredData.length;
+  const totalAll = allMunicipalities.length;
+  const maxPages = Math.ceil(totalFiltered / pageSize) || 1;
+
+  if (currentPage > maxPages) currentPage = maxPages;
+  if (currentPage < 1) currentPage = 1;
+
+  // Atualizar rótulo de contagem
+  if (countLabel) {
+    if (totalFiltered === 0) {
+      countLabel.textContent = `0 municípios encontrados`;
+    } else {
+      const startItem = (currentPage - 1) * pageSize + 1;
+      const endItem = Math.min(currentPage * pageSize, totalFiltered);
+      countLabel.textContent = `Exibindo ${startItem}–${endItem} de ${totalFiltered} municípios ${totalFiltered !== totalAll ? `(filtrados de ${totalAll})` : ''}`;
+    }
   }
 
-  const cargo = electionState.currentCargo;
+  // Atualizar paginação
+  if (pagesLabel) {
+    pagesLabel.textContent = `${currentPage} de ${maxPages}`;
+  }
+  if (prevBtn) prevBtn.disabled = (currentPage <= 1);
+  if (nextBtn) nextBtn.disabled = (currentPage >= maxPages);
 
-  if (filteredTableData.length === 0) {
+  // Caso nenhum município corresponda aos filtros
+  if (totalFiltered === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-dim);">
-          Nenhum município localizado com os filtros atuais.
+        <td colspan="8" style="text-align: center; padding: 36px 16px; color: #94a3b8;">
+          Nenhum município localizado com os filtros selecionados.
         </td>
       </tr>
     `;
     return;
   }
 
-  tbody.innerHTML = filteredTableData.map(item => {
-    const res = item.result;
-    let winnerHtml = '<span class="winner-pill sem-dados">Sem dados</span>';
-    let pctWinner = '-';
-    let margem = '-';
-    let validos = '-';
+  // Segmentação para a página ativa
+  const startIdx = (currentPage - 1) * pageSize;
+  const pageItems = filteredData.slice(startIdx, startIdx + pageSize);
+  const currentCargo = electionState.currentCargo;
 
-    if (res && res.apurado) {
-      validos = res.votosValidos.toLocaleString('pt-BR');
-      const cData = cargo === APP_CONFIG.CARGOS.PRESIDENTE ? res.presidente : res.governador;
-      if (cData) {
-        margem = `${cData.margemPercent.toFixed(1)}%`;
-        if (cargo === APP_CONFIG.CARGOS.PRESIDENTE) {
-          if (cData.vencedor === 'lula') {
-            winnerHtml = '<span class="winner-pill lula">Lula (PT)</span>';
-            pctWinner = `${cData.lula.percentual.toFixed(1)}%`;
-          } else {
-            winnerHtml = '<span class="winner-pill flavio">Flávio (PL)</span>';
-            pctWinner = `${cData.flavio.percentual.toFixed(1)}%`;
-          }
-        } else {
-          if (cData.vencedor === 'zucco') {
-            winnerHtml = '<span class="winner-pill zucco">Zucco (PL)</span>';
-            pctWinner = `${cData.zucco.percentual.toFixed(1)}%`;
-          } else {
-            winnerHtml = '<span class="winner-pill gov2">2º Colocado</span>';
-            pctWinner = `${cData.gov2.percentual.toFixed(1)}%`;
-          }
-        }
+  tbody.innerHTML = pageItems.map(item => {
+    const mun = electionState.getElectionByMunicipality(item.cdMun);
+    const cargoData = mun ? (currentCargo === APP_CONFIG.CARGOS.PRESIDENTE ? mun.presidente : mun.governador) : null;
+    const rawStatus = (cargoData?.status || 'awaiting').toLowerCase();
+
+    const isAwaiting = (rawStatus === 'awaiting' || rawStatus === 'aguardando');
+    const isFallback = (rawStatus === 'fallback');
+    const isError = (rawStatus === 'error');
+    const isFinalizado = (rawStatus === 'finalizado');
+
+    // Badge de Situação (Seção 6)
+    let badgeHtml = '<span class="table-badge status-awaiting">Aguardando</span>';
+    if (isFinalizado) {
+      badgeHtml = '<span class="table-badge status-finalizado">Totalizado</span>';
+    } else if (rawStatus === 'em_apuracao') {
+      badgeHtml = '<span class="table-badge status-em_apuracao">Em apuração</span>';
+    } else if (isFallback) {
+      badgeHtml = '<span class="table-badge status-fallback">Último dado válido</span>';
+    } else if (isError) {
+      badgeHtml = '<span class="table-badge status-error">Dados indisponíveis</span>';
+    }
+
+    // Apuração
+    let apuracaoHtml = '<span>0,00%</span>';
+    if (cargoData) {
+      const pctStr = (cargoData.percentual_apurado ?? 0).toFixed(2).replace('.', ',') + '%';
+      const secApuradas = cargoData.secoes_apuradas ?? 0;
+      const secTotal = cargoData.secoes_total ?? 0;
+      apuracaoHtml = `<span>${pctStr}</span> <small style="color: #64748b;">(${secApuradas}/${secTotal})</small>`;
+    }
+
+    // Regra da Seção 6: para awaiting ou error, 1º = —, 2º = —, Margem = —. Sem zeros falsos.
+    let cand1Html = '—';
+    let pct1Html = '—';
+    let cand2Html = '—';
+    let pct2Html = '—';
+    let margemHtml = '—';
+
+    if (!isAwaiting && !isError && cargoData) {
+      const v = cargoData.vencedor;
+      const s = cargoData.segundo_colocado;
+
+      if (v) {
+        const vColor = getCandidateColor(v, currentCargo);
+        const vNome = v.nome_urna || v.nome || 'Candidato';
+        cand1Html = `
+          <span class="cand-name-tag" style="border-left: 3px solid ${vColor}; padding-left: 5px;">
+            ${escapeHtml(vNome)} <small>(${escapeHtml(v.partido || '')})</small>
+          </span>
+        `;
+        pct1Html = `<strong>${formatPct(v.percentual)}</strong>`;
+      }
+
+      if (s) {
+        const sColor = getCandidateColor(s, currentCargo);
+        const sNome = s.nome_urna || s.nome || 'Candidato';
+        cand2Html = `
+          <span class="cand-name-tag" style="border-left: 3px solid ${sColor}; padding-left: 5px;">
+            ${escapeHtml(sNome)} <small>(${escapeHtml(s.partido || '')})</small>
+          </span>
+        `;
+        pct2Html = `<span>${formatPct(s.percentual)}</span>`;
+      }
+
+      if (cargoData.diferenca_pp !== null && cargoData.diferenca_pp !== undefined) {
+        margemHtml = `<strong class="margin-tag">${formatPp(cargoData.diferenca_pp)}</strong>`;
       }
     }
 
     return `
-      <tr data-cd="${item.cdMun}">
-        <td><strong>${item.nmMun}</strong></td>
-        <td><code style="font-family: monospace; color: #94a3b8;">${item.cdMun}</code></td>
-        <td>${item.nmRgi || '-'}</td>
-        <td>${winnerHtml}</td>
-        <td><strong>${pctWinner}</strong></td>
-        <td class="margin-tag">${margem}</td>
-        <td>${validos}</td>
+      <tr data-cd="${item.cdMun}" title="Clique para localizar ${escapeHtml(item.nmMun)} no mapa e abrir a ficha eleitoral">
+        <td>
+          <strong>${escapeHtml(item.nmMun)}</strong>
+          <span class="ibge-code">${item.cdMun}</span>
+        </td>
+        <td>${badgeHtml}</td>
+        <td>${apuracaoHtml}</td>
+        <td>${cand1Html}</td>
+        <td>${pct1Html}</td>
+        <td>${cand2Html}</td>
+        <td>${pct2Html}</td>
+        <td>${margemHtml}</td>
       </tr>
     `;
   }).join('');
 
-  // Adicionar clique na linha para zoom no mapa
+  // Integração com o Mapa ao clicar na linha (Seção 10)
   tbody.querySelectorAll('tr[data-cd]').forEach(tr => {
     tr.onclick = () => {
       const cd = tr.getAttribute('data-cd');
       if (mapEngineRef) {
-        // Fechar gaveta em telas pequenas para ver o mapa
-        if (window.innerWidth < 768) {
+        // Em telas estreitas, recolhe a gaveta para visualização do mapa
+        if (window.innerWidth < 960) {
           const drawer = document.getElementById('table-drawer');
           const overlay = document.getElementById('table-drawer-overlay');
           if (drawer) drawer.classList.remove('active');
@@ -238,43 +617,14 @@ export function renderTable() {
   });
 }
 
-function exportToCSV() {
-  if (filteredTableData.length === 0) return;
-  const cargo = electionState.currentCargo;
-  
-  const headers = ['Municipio', 'Codigo_IBGE', 'Regiao', 'Vencedor', 'Percentual_Vencedor', 'Margem_Percentual', 'Votos_Validos'];
-  const rows = filteredTableData.map(item => {
-    const res = item.result;
-    let w = 'Sem dados';
-    let p = '';
-    let m = '';
-    let v = '';
-    if (res && res.apurado) {
-      v = res.votosValidos;
-      const c = cargo === 'PRESIDENTE' ? res.presidente : res.governador;
-      if (c) {
-        w = c.vencedor;
-        m = c.margemPercent;
-        p = cargo === 'PRESIDENTE' ? (c.vencedor === 'lula' ? c.lula.percentual : c.flavio.percentual) : (c.vencedor === 'zucco' ? c.zucco.percentual : c.gov2.percentual);
-      }
-    }
-    return [
-      `"${item.nmMun}"`,
-      `"${item.cdMun}"`,
-      `"${item.nmRgi}"`,
-      `"${w}"`,
-      p,
-      m,
-      v
-    ].join(';');
-  });
-
-  const csvContent = '\uFEFF' + [headers.join(';'), ...rows].join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `Eleicoes_RS_2026_${cargo}_${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+/**
+ * Renderização central da tabela (reconstrói opções dinâmicas, resumo, filtros e linhas)
+ */
+export function renderTable() {
+  if (allMunicipalities.length === 0) return;
+  rebuildWinnerFilterOptions();
+  renderSummaryRibbon();
+  updateSortHeaderIcons();
+  applyFiltersAndSort();
+  renderTableBodyAndPagination();
 }

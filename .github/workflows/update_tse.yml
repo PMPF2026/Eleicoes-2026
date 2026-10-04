@@ -1,0 +1,135 @@
+name: Atualização Oficial dos Resultados TSE
+
+on:
+  schedule:
+    # Execução automática a cada 5 minutos durante o período de apuração
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    # Execução manual sob demanda (testes, auditoria, homologação operacional)
+
+# Garantia estrita de exclusão mútua: apenas uma execução do coletor por vez
+concurrency:
+  group: tse-collector
+  cancel-in-progress: false
+
+jobs:
+  update-tse:
+    name: Coletar e Publicar Dados TSE
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: 1. Checkout do Repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: 2. Configurar Ambiente Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 3. Registrar Checksum Anterior (Detecção de Mudança)
+        id: pre_check
+        run: |
+          if [ -f "data/tse_rs_consolidado.json" ]; then
+            PRE_SHA=$(sha256sum data/tse_rs_consolidado.json | awk '{print $1}')
+            echo "pre_sha=$PRE_SHA" >> $GITHUB_OUTPUT
+            echo "Checksum anterior: $PRE_SHA"
+          else
+            echo "pre_sha=none" >> $GITHUB_OUTPUT
+            echo "Consolidado anterior inexistente."
+          fi
+
+      - name: 4. Executar Motor Coletor Oficial TSE
+        run: |
+          python scripts/tse_collector.py
+
+      - name: 5. Validação de Integridade e Status Operacional (Fail-Safe Audit)
+        id: validate
+        run: |
+          python -c '
+          import os, sys, json, hashlib
+
+          status_path = "data/pipeline_status.json"
+          consolidado_path = "data/tse_rs_consolidado.json"
+
+          if not os.path.isfile(status_path):
+              print("[ERRO FATAL] Arquivo pipeline_status.json nao foi gerado.")
+              sys.exit(1)
+
+          with open(status_path, "r", encoding="utf-8") as f:
+              status = json.load(f)
+
+          pipeline_state = status.get("pipeline_state")
+          fail_safe = status.get("fail_safe_triggered", False)
+          print(f"[STATUS] Pipeline state: {pipeline_state}, Fail-Safe: {fail_safe}")
+
+          if pipeline_state != "success" or fail_safe:
+              err = status.get("error_message") or "Estado invalido no pipeline_status.json"
+              print(f"[FALHA CONTROLADA] Motor de atualizacao indicou falha/abort: {err}")
+              print("[PRESERVACAO] Publicacao cancelada. Consolidado LKG preservado.")
+              sys.exit(1)
+
+          if not os.path.isfile(consolidado_path):
+              print("[ERRO FATAL] Arquivo data/tse_rs_consolidado.json nao encontrado.")
+              sys.exit(1)
+
+          with open(consolidado_path, "r", encoding="utf-8") as f:
+              data = json.load(f)
+
+          muns = data.get("municipalities", {})
+          if len(muns) != 497:
+              print(f"[ERRO FATAL] Quantidade de municipios invalida: {len(muns)} (esperado 497)")
+              sys.exit(1)
+
+          for cd, m in muns.items():
+              if "presidente" not in m or "governador" not in m:
+                  print(f"[ERRO FATAL] Municipio {cd} nao contem presidente e governador.")
+                  sys.exit(1)
+
+          status_sha = status.get("checksum", {}).get("value")
+          with open(consolidado_path, "rb") as f:
+              actual_sha = hashlib.sha256(f.read()).hexdigest()
+
+          if status_sha != actual_sha:
+              print(f"[ERRO FATAL] Checksum divergente! Status: {status_sha}, Real: {actual_sha}")
+              sys.exit(1)
+
+          print(f"[SUCESSO] Validacao aprovada: 497 municipios validos, Checksum SHA-256: {actual_sha}")
+          '
+
+      - name: 6. Detecção de Alteração Real (Anti-Poluição de Histórico Git)
+        id: change_check
+        run: |
+          NEW_SHA=$(sha256sum data/tse_rs_consolidado.json | awk '{print $1}')
+          PRE_SHA="${{ steps.pre_check.outputs.pre_sha }}"
+          echo "SHA anterior: $PRE_SHA"
+          echo "SHA novo:     $NEW_SHA"
+
+          if [ "$NEW_SHA" = "$PRE_SHA" ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "RESULTADO: Nenhuma alteracao real detectada (304 / sem novos votos)."
+            echo "Acao: Publicacao/commit DISPENSADOS para nao poluir o historico Git."
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "RESULTADO: Alteracao real detectada no consolidado TSE!"
+            echo "Acao: Prosseguir com publicacao atomica."
+          fi
+
+      - name: 7. Publicação Atômica em Produção (Git Commit & Push)
+        if: steps.change_check.outputs.has_changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          COLLECTION_ID=$(python -c 'import json; print(json.load(open("data/pipeline_status.json"))["collection_id"])')
+          HTTP_200=$(python -c 'import json; print(json.load(open("data/pipeline_status.json")).get("http_200", 0))')
+          HTTP_304=$(python -c 'import json; print(json.load(open("data/pipeline_status.json")).get("http_304", 0))')
+          
+          git add data/tse_rs_consolidado.json data/pipeline_status.json
+          git commit -m "chore(tse): atualizacao automatica [$COLLECTION_ID] (200=$HTTP_200, 304=$HTTP_304)"
+          git push origin main
+          echo "[PUBLICADO] Novo consolidado publicado com sucesso no branch main!"

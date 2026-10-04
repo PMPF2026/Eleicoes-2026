@@ -1,6 +1,7 @@
 /* ==========================================================================
    Eleições RS 2026 — Mapa Eleitoral
    Design System UI/UX Pro Max — Tabela Municipal dos 497 Municípios
+   GATE 6.4 — Tabela Municipal + Filtros Analíticos
    ========================================================================== */
 
 .table-drawer-overlay {
@@ -26,8 +27,8 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: 860px;
-  max-width: 95vw;
+  width: 960px;
+  max-width: 96vw;
   height: 100vh;
   background: #0f172a;
   border-left: 1px solid var(--border-color);
@@ -37,6 +38,7 @@
   flex-direction: column;
   transform: translateX(100%);
   transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: 'Inter', -apple-system, sans-serif;
 }
 
 .table-drawer.active {
@@ -83,27 +85,92 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Toolbar de Filtros */
+/* Faixa de Resumo da Tabela (Seção 13) */
+.table-summary-ribbon {
+  display: flex;
+  gap: 10px;
+  padding: 8px 24px;
+  background: rgba(11, 17, 32, 0.6);
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.summary-pill .summary-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.summary-pill.totalizado .summary-dot {
+  background: #10b981;
+}
+
+.summary-pill.em_apuracao .summary-dot {
+  background: #38bdf8;
+}
+
+.summary-pill.aguardando .summary-dot {
+  background: #fbbf24;
+}
+
+.summary-count {
+  font-family: 'Fira Code', monospace;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.summary-label {
+  color: #94a3b8;
+}
+
+/* Toolbar de Busca e Filtros Analíticos (Seções 7 e 8) */
 .table-toolbar {
   padding: 12px 24px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   background: rgba(11, 17, 32, 0.4);
   flex-wrap: wrap;
 }
 
+.table-search-wrapper {
+  position: relative;
+  flex: 1.5;
+  min-width: 180px;
+  display: flex;
+  align-items: center;
+}
+
+.table-search-icon {
+  position: absolute;
+  left: 10px;
+  color: #64748b;
+  pointer-events: none;
+}
+
 .table-search-input {
-  flex: 1;
-  min-width: 200px;
-  height: 38px;
+  width: 100%;
+  height: 36px;
   background: rgba(8, 12, 20, 0.8);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  padding: 0 14px;
+  padding: 0 12px 0 32px;
   color: #ffffff;
-  font-size: 13px;
+  font-size: 12px;
   outline: none;
   transition: border-color var(--transition-fast);
 }
@@ -114,29 +181,42 @@
 }
 
 .table-filter-select {
-  height: 38px;
+  height: 36px;
   background: rgba(8, 12, 20, 0.8);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  padding: 0 12px;
+  padding: 0 10px;
   color: var(--text-main);
-  font-size: 12px;
+  font-size: 11px;
   outline: none;
   cursor: pointer;
+  max-width: 180px;
 }
 
 .table-filter-select:focus {
   border-color: #38bdf8;
 }
 
-.table-stats-count {
-  font-size: 12px;
-  font-family: 'Fira Code', monospace;
-  color: var(--text-muted);
+.btn-clear-filters {
+  height: 36px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
   white-space: nowrap;
 }
 
-/* Container com scroll horizontal seguro (UX Guidelines) */
+.btn-clear-filters:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+/* Container da Tabela com Scroll Responsivo */
 .table-body-container {
   flex: 1;
   overflow-y: auto;
@@ -150,17 +230,17 @@ table.mun-table {
   border-collapse: collapse;
   text-align: left;
   font-size: 12px;
-  min-width: 680px; /* Garante alinhamento em telas menores via scroll horizontal */
+  min-width: 780px;
 }
 
 table.mun-table th {
   background: #0b1120;
-  color: var(--text-muted);
+  color: #94a3b8;
   font-weight: 700;
   text-transform: uppercase;
   font-size: 10px;
-  letter-spacing: 0.6px;
-  padding: 12px 14px;
+  letter-spacing: 0.5px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
@@ -168,17 +248,34 @@ table.mun-table th {
   cursor: pointer;
   user-select: none;
   transition: color var(--transition-fast);
+  white-space: nowrap;
 }
 
 table.mun-table th:hover {
   color: #38bdf8;
 }
 
+table.mun-table th.active-sort {
+  color: #38bdf8;
+}
+
+.sort-icon {
+  font-size: 10px;
+  color: #64748b;
+  margin-left: 3px;
+}
+
+th.active-sort .sort-icon {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
 table.mun-table td {
-  padding: 10px 14px;
+  padding: 9px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  color: var(--text-main);
+  color: #e2e8f0;
   white-space: nowrap;
+  font-size: 11.5px;
 }
 
 table.mun-table tr {
@@ -187,47 +284,167 @@ table.mun-table tr {
 }
 
 table.mun-table tr:hover td {
-  background-color: rgba(37, 99, 235, 0.15);
+  background-color: rgba(56, 189, 248, 0.08);
 }
 
-.winner-pill {
+.ibge-code {
+  font-family: 'Fira Code', monospace;
+  font-size: 10px;
+  color: #64748b;
+  margin-left: 4px;
+}
+
+/* Badges de Status Eleitoral */
+.table-badge {
   display: inline-block;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.table-badge.status-finalizado {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.table-badge.status-em_apuracao {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.table-badge.status-awaiting {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.table-badge.status-fallback {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.table-badge.status-error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Destaque do Candidato na Célula */
+.cand-name-tag {
   font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.winner-pill.lula {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.4);
-}
-
-.winner-pill.flavio {
-  background: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.4);
-}
-
-.winner-pill.zucco {
-  background: rgba(234, 179, 8, 0.2);
-  color: #facc15;
-  border: 1px solid rgba(234, 179, 8, 0.4);
-}
-
-.winner-pill.gov2 {
-  background: rgba(34, 197, 94, 0.2);
-  color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.4);
-}
-
-.winner-pill.sem-dados {
-  background: rgba(148, 163, 184, 0.2);
-  color: #cbd5e1;
+.cand-name-tag small {
+  color: #94a3b8;
+  font-weight: 400;
 }
 
 .margin-tag {
   font-family: 'Fira Code', 'JetBrains Mono', monospace;
   font-weight: 600;
+  color: #38bdf8;
+}
+
+/* Barra de Paginação e Contadores (Seção 12) */
+.table-pagination-bar {
+  padding: 10px 24px;
+  border-top: 1px solid var(--border-color);
+  background: #0b1120;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.table-stats-count {
+  font-size: 11px;
+  font-family: 'Fira Code', monospace;
+  color: #94a3b8;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-size-label {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.page-size-select {
+  height: 28px;
+  background: rgba(8, 12, 20, 0.8);
+  border: 1px solid var(--border-color);
+  color: #cbd5e1;
+  font-size: 11px;
+  border-radius: 4px;
+  padding: 0 6px;
+  outline: none;
+  cursor: pointer;
+}
+
+.btn-page {
+  height: 28px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.btn-page:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.btn-page:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pages-label {
+  font-family: 'Fira Code', monospace;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Responsividade em Telas Menores */
+@media (max-width: 768px) {
+  .table-drawer {
+    width: 100vw;
+    max-width: 100vw;
+  }
+  .table-toolbar {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .table-filter-select {
+    max-width: 100%;
+    flex: 1;
+  }
+  .table-summary-ribbon {
+    padding: 8px 14px;
+  }
+  .table-pagination-bar {
+    padding: 10px 14px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

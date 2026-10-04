@@ -17,6 +17,19 @@ export const APP_CONFIG = {
   // Caminho do GeoJSON dos 497 Municípios
   geoJsonPath: 'data/Municipios_RS_497.geojson',
 
+  // Caminhos Oficiais do TSE (GATE 5 / GATE 6)
+  tseConsolidadoPath: 'data/tse_rs_consolidado.json',
+  tsePipelineStatusPath: 'data/pipeline_status.json',
+
+  // Estados Eleitorais Oficiais (GATE 6.1)
+  ELECTORAL_STATUS: {
+    AWAITING: 'awaiting',
+    EM_APURACAO: 'em_apuracao',
+    FINALIZADO: 'finalizado',
+    FALLBACK: 'fallback',
+    ERROR: 'error'
+  },
+
   // Coordenadas Centrais do Rio Grande do Sul (EPSG:4326)
   centerRS: [-52.8, -30.1],
   defaultZoom: 7.2,

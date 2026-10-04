@@ -10,7 +10,6 @@ import { initPopups } from './ui/popup.js';
 import { updateStatusPanel } from './ui/status-panel.js';
 import { initTableView, populateTableData, renderTable } from './ui/table-view.js';
 import { electionState } from './data/tse-normalizer.js';
-import { generateMockElectionData } from './data/mock-data.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log(`[App] Inicializando ${APP_CONFIG.appName}...`);
@@ -44,16 +43,12 @@ document.addEventListener('DOMContentLoaded', () => {
       btnPres.classList.add('active');
       btnGov.classList.remove('active');
       electionState.setCargo(APP_CONFIG.CARGOS.PRESIDENTE);
-      // Atualizar opções do filtro na tabela
-      updateTableFilterOptions(APP_CONFIG.CARGOS.PRESIDENTE);
     };
 
     btnGov.onclick = () => {
       btnGov.classList.add('active');
       btnPres.classList.remove('active');
       electionState.setCargo(APP_CONFIG.CARGOS.GOVERNADOR);
-      // Atualizar opções do filtro na tabela
-      updateTableFilterOptions(APP_CONFIG.CARGOS.GOVERNADOR);
     };
   }
 
@@ -91,27 +86,35 @@ document.addEventListener('DOMContentLoaded', () => {
   // 9. Configurar Busca Rápida Municipal
   setupMunicipalSearch(mapEngine);
 
-  // 10. Quando os 497 municípios forem carregados
-  mapEngine.onFeaturesLoaded(features => {
+  // 10. Quando os 497 municípios forem carregados na cartografia
+  mapEngine.onFeaturesLoaded(async (features) => {
+    // 10.1 Ingestão e normalização oficial do TSE
+    await electionState.loadConsolidatedData();
+
+    // 10.2 Validação cruzada Cartografia x Eleições (Seção 8 do GATE 6.1)
+    electionState.validateCartographyCrossReference(features);
+
+    // 10.3 Atualizar a renderização da simbologia temática coroplética
+    mapEngine.refreshStyles();
+
+    // 10.4 Preencher a tabela municipal com os dados base
     populateTableData(features);
 
-    // Carregar inicialmente os dados simulados de teste para validação imediata da interface
-    const mockData = generateMockElectionData(features);
-    electionState.updateElectionData(mockData);
-
-    // Configurar Botão de Alternância (Simulação vs Aguardando Oficial)
+    // Configurar o botão informativo oficial
     const simBtn = document.getElementById('btn-toggle-sim');
     if (simBtn) {
+      simBtn.innerHTML = `
+        <span class="ui-icon" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </span>
+        <span>Consolidado Oficial TSE (497 Mun)</span>
+      `;
+      simBtn.style.color = '#10b981';
+      simBtn.title = 'Dados consolidados oficiais do TSE carregados com sucesso';
       simBtn.onclick = () => {
-        if (electionState.currentState === APP_CONFIG.STATES.WAITING) {
-          electionState.updateElectionData(mockData);
-          simBtn.innerHTML = '<span>Modo Simulação / Teste</span>';
-          simBtn.style.color = '#38bdf8';
-        } else {
-          electionState.resetToWaiting();
-          simBtn.innerHTML = '<span>Aguardando Oficial TSE</span>';
-          simBtn.style.color = '#fbbf24';
-        }
+        const meta = electionState.getElectionMetadata();
+        console.log('[TSE Oficial] Metadados da Publicação:', meta);
+        console.log('[TSE Oficial] Métricas de Desempenho:', electionState.getPerformanceMetrics());
       };
     }
   });
@@ -171,28 +174,4 @@ function setupMunicipalSearch(mapEngine) {
       dropdown.classList.remove('active');
     }
   });
-}
-
-/**
- * Atualiza os rótulos do dropdown de filtro da tabela
- */
-function updateTableFilterOptions(cargo) {
-  const filterSelect = document.getElementById('table-filter-winner');
-  if (!filterSelect) return;
-
-  if (cargo === APP_CONFIG.CARGOS.PRESIDENTE) {
-    filterSelect.innerHTML = `
-      <option value="all">Todos os Vencedores</option>
-      <option value="lula">Vantagem Lula (PT)</option>
-      <option value="flavio">Vantagem Flávio Bolsonaro (PL)</option>
-      <option value="sem-dados">Sem dados / Pendente</option>
-    `;
-  } else {
-    filterSelect.innerHTML = `
-      <option value="all">Todos os Vencedores</option>
-      <option value="zucco">Vantagem Zucco (PL)</option>
-      <option value="gov2">Vantagem 2º Colocado</option>
-      <option value="sem-dados">Sem dados / Pendente</option>
-    `;
-  }
 }

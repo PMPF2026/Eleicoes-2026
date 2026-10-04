@@ -1,0 +1,28 @@
+{
+  "pipeline_state": "success",
+  "collection_id": "cycle-20261004-203109",
+  "data_version": "20261004.203109",
+  "last_run_started_at": "2026-10-04T20:31:09.534383-03:00",
+  "last_run_finished_at": "2026-10-04T20:31:35.008398-03:00",
+  "last_successful_publication_at": "2026-10-04T20:31:34.509299-03:00",
+  "duration_seconds": 24.97,
+  "total_municipalities": 497,
+  "total_endpoints": 994,
+  "http_200": 79,
+  "http_304": 915,
+  "http_errors": 0,
+  "fallbacks_active": 0,
+  "checksum": {
+    "algorithm": "SHA-256",
+    "value": "939fed56eac0187846a5b03113b704a029b99ba4604453075966c256281f988f"
+  },
+  "freshness_summary": {
+    "fresh": 79,
+    "not_modified": 915,
+    "awaiting": 0,
+    "fallback": 0,
+    "error": 0
+  },
+  "fail_safe_triggered": false,
+  "error_message": null
+}
