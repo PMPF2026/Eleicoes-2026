@@ -5,6 +5,7 @@
 
 import { APP_CONFIG } from '../config.js';
 import { municipalStyleFunction, hoverStyleFunction, selectedStyleFunction } from './symbology.js';
+import { createLabelLayer, populateMunicipalLabels } from './labels.js';
 import { formatCursorCoordinates } from '../utils/projection.js';
 import { showPopup, hidePopup, showTooltip, hideTooltip } from '../ui/popup.js';
 
@@ -14,6 +15,8 @@ export class MapEngine {
     this.map = null;
     this.vectorLayer = null;
     this.vectorSource = null;
+    this.labelLayer = null;
+    this.labelSource = null;
     this.basemaps = {};
     this.currentBasemap = 'osm';
     this.hoveredFeature = null;
@@ -55,6 +58,11 @@ export class MapEngine {
       zIndex: 10
     });
 
+    // Camada Visual Independente de Labels Municipais (GATE 7.1)
+    const { labelLayer, labelSource } = createLabelLayer();
+    this.labelLayer = labelLayer;
+    this.labelSource = labelSource;
+
     // Posição central inicial
     const centerMercator = ol.proj.fromLonLat(APP_CONFIG.centerRS);
 
@@ -63,7 +71,8 @@ export class MapEngine {
       layers: [
         this.basemaps['osm'],
         this.basemaps['satellite'],
-        this.vectorLayer
+        this.vectorLayer,
+        this.labelLayer
       ],
       view: new ol.View({
         center: centerMercator,
@@ -88,6 +97,9 @@ export class MapEngine {
         this.featuresByIbge.set(cdMun, feat);
       });
 
+      // Popula os 497 labels municipais na camada visual independente (GATE 7.1)
+      populateMunicipalLabels(features, this.labelSource);
+
       this.onFeaturesLoadedCallbacks.forEach(cb => cb(features));
     });
 
@@ -106,6 +118,24 @@ export class MapEngine {
     const map = this.map;
     const coordEl = document.getElementById('footer-coords');
 
+    // Identifica a feição do município na camada vetorial ou na camada de labels (GATE 7.1)
+    const getMunicipalFeatureAtPixel = (pixel) => {
+      let found = null;
+      map.forEachFeatureAtPixel(pixel, (feat, layer) => {
+        if (layer === this.vectorLayer) {
+          found = feat;
+          return true;
+        } else if (layer === this.labelLayer) {
+          const parent = feat.get('parentFeature') || this.featuresByIbge.get(String(feat.get('CD_MUN')));
+          if (parent) {
+            found = parent;
+            return true;
+          }
+        }
+      });
+      return found;
+    };
+
     // Pointer Move (Hover + Coordenadas)
     map.on('pointermove', (evt) => {
       if (evt.dragging) return;
@@ -117,13 +147,7 @@ export class MapEngine {
       }
 
       // Detecção de Hover
-      let hitFeature = null;
-      map.forEachFeatureAtPixel(evt.pixel, (feat, layer) => {
-        if (layer === this.vectorLayer) {
-          hitFeature = feat;
-          return true;
-        }
-      });
+      const hitFeature = getMunicipalFeatureAtPixel(evt.pixel);
 
       map.getTargetElement().style.cursor = hitFeature ? 'pointer' : '';
 
@@ -148,13 +172,7 @@ export class MapEngine {
 
     // Clique no Município
     map.on('singleclick', (evt) => {
-      let clickedFeature = null;
-      map.forEachFeatureAtPixel(evt.pixel, (feat, layer) => {
-        if (layer === this.vectorLayer) {
-          clickedFeature = feat;
-          return true;
-        }
-      });
+      const clickedFeature = getMunicipalFeatureAtPixel(evt.pixel);
 
       if (clickedFeature) {
         this.selectFeature(clickedFeature);
@@ -222,6 +240,9 @@ export class MapEngine {
   refreshStyles() {
     if (this.vectorLayer) {
       this.vectorLayer.changed();
+    }
+    if (this.labelLayer) {
+      this.labelLayer.changed();
     }
   }
 }
