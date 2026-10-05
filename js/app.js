@@ -9,6 +9,7 @@ import { MapEngine } from './map/map-engine.js';
 import { initPopups } from './ui/popup.js';
 import { updateStatusPanel } from './ui/status-panel.js';
 import { initTableView, populateTableData, renderTable } from './ui/table-view.js';
+import { initAboutModal } from './ui/about.js';
 import { electionState } from './data/tse-normalizer.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -26,6 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 4. Inicializar Tabela Municipal
   initTableView(mapEngine);
+
+  // 4.1 Inicializar Modal Institucional Sobre (GATE 7.1)
+  initAboutModal();
 
   // 5. Vincular Gerenciador de Estado à UI
   electionState.subscribe(stateObj => {

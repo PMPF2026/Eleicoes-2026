@@ -1,0 +1,328 @@
+/* ==========================================================================
+   Eleições RS 2026 — Mapa Eleitoral
+   GATE 7.1 — Componente Visual: Painel Institucional "Sobre"
+   ========================================================================== */
+
+/* Overlay de Fundo */
+.about-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(4, 7, 14, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 300;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 250ms ease, visibility 250ms ease;
+}
+
+.about-modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Janela Modal do Sobre */
+.about-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -46%) scale(0.96);
+  width: 680px;
+  max-width: 92vw;
+  max-height: 88vh;
+  background: #0f172a;
+  background: linear-gradient(180deg, #131d35 0%, #0b1120 100%);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.75), 0 0 35px rgba(56, 189, 248, 0.15);
+  z-index: 310;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
+  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1), opacity 250ms ease, visibility 250ms ease;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
+}
+
+.about-modal.active {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Cabeçalho da Modal */
+.about-modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.6);
+  position: relative;
+}
+
+.about-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+
+.about-modal-header h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+  margin: 0;
+  background: linear-gradient(135deg, #ffffff 40%, #bae6fd 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.about-modal-header .about-subtitle {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.about-close-btn {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.about-close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+  transform: rotate(90deg);
+}
+
+/* Corpo da Modal com Scroll Customizado */
+.about-modal-body {
+  padding: 22px 26px 26px;
+  overflow-y: auto;
+  max-height: calc(88vh - 100px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.about-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.about-modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.about-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 3px;
+}
+
+.about-modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Seções de Conteúdo */
+.about-section h3 {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #38bdf8;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.about-section h3::before {
+  content: '';
+  width: 3px;
+  height: 13px;
+  background: #38bdf8;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.about-section p {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #cbd5e1;
+  margin-bottom: 6px;
+}
+
+.about-section p strong {
+  color: #ffffff;
+}
+
+/* Destaque de Autoria e Desenvolvimento (Seções 2 e 5) */
+.about-author-section {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.author-lead {
+  font-size: 12.5px !important;
+  color: #94a3b8 !important;
+  margin-bottom: 8px !important;
+}
+
+.author-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.author-name {
+  font-size: 19px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+}
+
+.author-title {
+  display: inline-block;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(59, 130, 246, 0.22));
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #7dd3fc;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 3px 10px;
+  border-radius: 6px;
+}
+
+/* Link Oficial do TSE */
+.about-official-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #38bdf8;
+  text-decoration: none;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 180ms ease;
+  margin-top: 4px;
+}
+
+.about-official-link:hover {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* Painel de Estado Dinâmico */
+.about-status-box {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+
+.dynamic-update-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 18px;
+  margin-top: 10px;
+  background: rgba(2, 6, 23, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.dynamic-update-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.update-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+}
+
+.update-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f1f5f9;
+  font-family: 'Fira Code', monospace;
+}
+
+/* Aviso Técnico / Disclaimer */
+.about-disclaimer {
+  background: rgba(245, 158, 11, 0.08);
+  border-left: 3px solid #f59e0b;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin-top: 4px;
+}
+
+.about-disclaimer p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+.about-disclaimer strong {
+  color: #fbbf24;
+}
+
+/* Responsividade Mobile */
+@media (max-width: 640px) {
+  .about-modal {
+    width: 95vw;
+    max-height: 92vh;
+  }
+  .about-modal-header {
+    padding: 16px 18px 14px;
+  }
+  .about-modal-header h2 {
+    font-size: 19px;
+  }
+  .about-modal-body {
+    padding: 16px 18px 20px;
+    gap: 16px;
+  }
+  .dynamic-update-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
