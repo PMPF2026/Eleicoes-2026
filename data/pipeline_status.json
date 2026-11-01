@@ -1,11 +1,11 @@
 {
   "pipeline_state": "success",
-  "collection_id": "cycle-20261031-215701",
-  "data_version": "20261031.215701",
-  "last_run_started_at": "2026-10-31T21:57:01.761450+00:00",
-  "last_run_finished_at": "2026-10-31T21:57:27.896158+00:00",
-  "last_successful_publication_at": "2026-10-31T21:57:27.374517+00:00",
-  "duration_seconds": 25.61,
+  "collection_id": "cycle-20261101-005713",
+  "data_version": "20261101.005713",
+  "last_run_started_at": "2026-11-01T00:57:13.642691+00:00",
+  "last_run_finished_at": "2026-11-01T00:57:25.277831+00:00",
+  "last_successful_publication_at": "2026-11-01T00:57:24.728895+00:00",
+  "duration_seconds": 11.09,
   "total_municipalities": 497,
   "total_endpoints": 994,
   "http_200": 0,
@@ -14,7 +14,7 @@
   "fallbacks_active": 0,
   "checksum": {
     "algorithm": "SHA-256",
-    "value": "155209f428cfd466c83e6a66c8a0173e6c26c33599ee0fc68f22a53530b2f710"
+    "value": "07d2b8a6f2110c50f537a40a13e1b4707dc523d427f9d92a1d19219c9324ee85"
   },
   "freshness_summary": {
     "fresh": 0,
